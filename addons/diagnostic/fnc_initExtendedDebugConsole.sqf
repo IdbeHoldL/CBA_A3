@@ -208,18 +208,30 @@ FUNC(nextStatement) = {
 };
 
 // remove forced pause for watch fields
+#define DELAY 0.5
 #define WATCHFIELD_INPUT_IDCS [IDC_RSCDEBUGCONSOLE_WATCHINPUT1, IDC_RSCDEBUGCONSOLE_WATCHINPUT2, IDC_RSCDEBUGCONSOLE_WATCHINPUT3, IDC_RSCDEBUGCONSOLE_WATCHINPUT4]
 
 {
     private _watchInput = _display displayCtrl _x;
 
-    _watchInput ctrlAddEventHandler ["SetFocus", {
-        _this spawn {
-            isNil {
-                (_this select 0) setVariable ["RscDebugConsole_watchPaused", false];
-            };
-        };
+    _watchInput ctrlAddEventHandler ["KeyDown", {
+        params ["_watchInput"];
+
+        _watchInput setVariable ["RscDebugConsole_watchPaused", true];
+        _watchInput setVariable [QGVAR(lastInput), diag_tickTime];
+        false
     }];
+
+    private _fnc_eachFrame = {
+        params ["_watchInput"];
+
+        if (_watchInput getVariable ["RscDebugConsole_watchPaused", false] && {(_watchInput getVariable [QGVAR(lastInput), -DELAY]) + DELAY < diag_tickTime}) then {
+            _watchInput setVariable ["RscDebugConsole_watchPaused", false];
+        };
+    };
+
+    _watchInput ctrlAddEventHandler ["MouseMoving", _fnc_eachFrame];
+    _watchInput ctrlAddEventHandler ["MouseHolding", _fnc_eachFrame];
 
     _watchInput ctrlAddEventHandler ["SetFocus", {
         (_this select 0) setVariable [QGVAR(hasFocus), true];
