@@ -208,12 +208,30 @@ FUNC(nextStatement) = {
 };
 
 // remove forced pause for watch fields
+#define WATCHFIELD_INPUT_IDCS [IDC_RSCDEBUGCONSOLE_WATCHINPUT1, IDC_RSCDEBUGCONSOLE_WATCHINPUT2, IDC_RSCDEBUGCONSOLE_WATCHINPUT3, IDC_RSCDEBUGCONSOLE_WATCHINPUT4]
+
 {
-    (_display displayCtrl _x) ctrlAddEventHandler ["SetFocus", {
+    private _watchInput = _display displayCtrl _x;
+
+    _watchInput ctrlAddEventHandler ["SetFocus", {
         _this spawn {
             isNil {
                 (_this select 0) setVariable ["RscDebugConsole_watchPaused", false];
             };
         };
     }];
-} forEach [IDC_RSCDEBUGCONSOLE_WATCHINPUT1, IDC_RSCDEBUGCONSOLE_WATCHINPUT2, IDC_RSCDEBUGCONSOLE_WATCHINPUT3, IDC_RSCDEBUGCONSOLE_WATCHINPUT4];
+
+    _watchInput ctrlAddEventHandler ["SetFocus", {
+        (_this select 0) setVariable [QGVAR(hasFocus), true];
+    }];
+    _watchInput ctrlAddEventHandler ["KillFocus", {
+        (_this select 0) setVariable [QGVAR(hasFocus), false];
+    }];
+} forEach WATCHFIELD_INPUT_IDCS;
+
+// block expression enter when over watchfield
+_display displayAddEventHandler ["KeyDown", {
+    params ["_display", "_key"];
+
+    _key in [DIK_RETURN, DIK_NUMPADENTER] && {{(_display displayCtrl _x) getVariable [QGVAR(hasFocus), false]} count WATCHFIELD_INPUT_IDCS > 0}
+}];
